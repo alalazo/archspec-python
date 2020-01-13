@@ -2,6 +2,7 @@
 # Spack Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
+"""Detection of CPU microarchitectures"""
 import collections
 import functools
 import os
@@ -12,16 +13,16 @@ import warnings
 
 import six
 
-from .microarchitecture import generic_microarchitecture, targets
-from .schema import targets_json
+from .microarchitecture import generic_microarchitecture, TARGETS
+from .schema import TARGETS_JSON
 
 #: Mapping from operating systems to chain of commands
 #: to obtain a dictionary of raw info on the current cpu
-info_factory = collections.defaultdict(list)
+INFO_FACTORY = collections.defaultdict(list)
 
 #: Mapping from micro-architecture families (x86_64, ppc64le, etc.) to
 #: functions checking the compatibility of the host with a given target
-compatibility_checks = {}
+COMPATIBILITY_CHECKS = {}
 
 
 def info_dict(operating_system):
@@ -33,7 +34,7 @@ def info_dict(operating_system):
             function is a viable factory of raw info dictionaries.
     """
     def decorator(factory):
-        info_factory[operating_system].append(factory)
+        INFO_FACTORY[operating_system].append(factory)
 
         @functools.wraps(factory)
         def _impl():
@@ -77,7 +78,7 @@ def proc_cpuinfo():
     return info
 
 
-def check_output(args, env):
+def _check_output(args, env):
     output = subprocess.Popen(
         args, stdout=subprocess.PIPE, env=env
     ).communicate()[0]
@@ -97,7 +98,7 @@ def sysctl_info_dict():
     child_environment['PATH'] = os.pathsep.join(search_paths)
 
     def sysctl(*args):
-        return check_output(
+        return _check_output(
             ['sysctl'] + list(args), env=child_environment
         ).strip()
 
@@ -118,7 +119,7 @@ def adjust_raw_flags(info):
     """
     # Flags detected on Darwin turned to their linux counterpart
     flags = info.get('flags', [])
-    d2l = targets_json['conversions']['darwin_flags']
+    d2l = TARGETS_JSON['conversions']['darwin_flags']
     for darwin_flag, linux_flag in d2l.items():
         if darwin_flag in flags:
             info['flags'] += ' ' + linux_flag
@@ -136,7 +137,7 @@ def adjust_raw_vendor(info):
     # https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
     # https://github.com/gcc-mirror/gcc/blob/master/gcc/config/aarch64/aarch64-cores.def
     # https://patchwork.kernel.org/patch/10524949/
-    arm_vendors = targets_json['conversions']['arm_vendors']
+    arm_vendors = TARGETS_JSON['conversions']['arm_vendors']
     arm_code = info['CPU implementer']
     if arm_code in arm_vendors:
         info['CPU implementer'] = arm_vendors[arm_code]
@@ -148,12 +149,13 @@ def raw_info_dictionary():
     This function calls all the viable factories one after the other until
     there's one that is able to produce the requested information.
     """
+    # pylint: disable=broad-except
     info = {}
-    for factory in info_factory[platform.system()]:
+    for factory in INFO_FACTORY[platform.system()]:
         try:
             info = factory()
-        except Exception as e:
-            warnings.warn(str(e))
+        except Exception as exc:
+            warnings.warn(str(exc))
 
         if info:
             adjust_raw_flags(info)
@@ -173,8 +175,8 @@ def compatible_microarchitectures(info):
     architecture_family = platform.machine()
     # If a tester is not registered, be conservative and assume no known
     # target is compatible with the host
-    tester = compatibility_checks.get(architecture_family, lambda x, y: False)
-    return [x for x in targets.values() if tester(info, x)] or \
+    tester = COMPATIBILITY_CHECKS.get(architecture_family, lambda x, y: False)
+    return [x for x in TARGETS.values() if tester(info, x)] or \
            [generic_microarchitecture(architecture_family)]
 
 
@@ -207,10 +209,11 @@ def compatibility_check(architecture_family):
         architecture_family = (architecture_family,)
 
     def decorator(func):
+        # pylint: disable=fixme
         # TODO: on removal of Python 2.6 support this can be re-written as
         # TODO: an update +  a dict comprehension
         for arch_family in architecture_family:
-            compatibility_checks[arch_family] = func
+            COMPATIBILITY_CHECKS[arch_family] = func
 
         return func
 
@@ -219,26 +222,28 @@ def compatibility_check(architecture_family):
 
 @compatibility_check(architecture_family=('ppc64le', 'ppc64'))
 def compatibility_check_for_power(info, target):
+    """Compatibility check for PPC64 and PPC64LE architectures."""
     basename = platform.machine()
     generation_match = re.search(r'POWER(\d+)', info.get('cpu', ''))
     generation = int(generation_match.group(1))
 
     # We can use a target if it descends from our machine type and our
     # generation (9 for POWER9, etc) is at least its generation.
-    arch_root = targets[basename]
+    arch_root = TARGETS[basename]
     return (target == arch_root or arch_root in target.ancestors) \
         and target.generation <= generation
 
 
 @compatibility_check(architecture_family='x86_64')
 def compatibility_check_for_x86_64(info, target):
+    """Compatibility check for x86_64 architectures."""
     basename = 'x86_64'
     vendor = info.get('vendor_id', 'generic')
     features = set(info.get('flags', '').split())
 
     # We can use a target if it descends from our machine type, is from our
     # vendor, and we have all of its features
-    arch_root = targets[basename]
+    arch_root = TARGETS[basename]
     return (target == arch_root or arch_root in target.ancestors) \
         and (target.vendor == vendor or target.vendor == 'generic') \
         and target.features.issubset(features)
@@ -246,11 +251,12 @@ def compatibility_check_for_x86_64(info, target):
 
 @compatibility_check(architecture_family='aarch64')
 def compatibility_check_for_aarch64(info, target):
+    """Compatibility check for AARCH64 architectures."""
     basename = 'aarch64'
     features = set(info.get('Features', '').split())
     vendor = info.get('CPU implementer', 'generic')
 
-    arch_root = targets[basename]
+    arch_root = TARGETS[basename]
     return (target == arch_root or arch_root in target.ancestors) \
         and (target.vendor == vendor or target.vendor == 'generic') \
         and target.features.issubset(features)

@@ -2,6 +2,10 @@
 # Spack Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
+"""Types and functions to manage information
+on CPU microarchitectures.
+"""
+# pylint: disable=useless-object-inheritance
 import functools
 import platform
 import re
@@ -19,7 +23,7 @@ import archspec.cpu.alias
 import archspec.cpu.schema
 
 from .schema import LazyDictionary
-from .alias import feature_aliases
+from .alias import FEATURE_ALIASES
 
 
 def coerce_target_names(func):
@@ -29,18 +33,19 @@ def coerce_target_names(func):
     @functools.wraps(func)
     def _impl(self, other):
         if isinstance(other, six.string_types):
-            if other not in targets:
+            if other not in TARGETS:
                 msg = '"{0}" is not a valid target name'
                 raise ValueError(msg.format(other))
-            other = targets[other]
+            other = TARGETS[other]
 
         return func(self, other)
     return _impl
 
 
 class Microarchitecture(object):
+    # pylint: disable=missing-class-docstring,too-many-arguments
     #: Aliases for micro-architecture's features
-    feature_aliases = feature_aliases
+    feature_aliases = FEATURE_ALIASES
 
     def __init__(
             self, name, parents, vendor, features, compilers, generation=0
@@ -85,6 +90,7 @@ class Microarchitecture(object):
 
     @property
     def ancestors(self):
+        """All the ancestors of this microarchitecture."""
         value = self.parents[:]
         for parent in self.parents:
             value.extend(a for a in parent.ancestors if a not in value)
@@ -226,11 +232,11 @@ class Microarchitecture(object):
 
             # If the suffixes are not all equal there's no match
             if ((suffix != min_suffix and min_version) or
-                (suffix != max_suffix and max_version)):
+                    (suffix != max_suffix and max_version)):
                 return False
 
             # Assume compiler versions fit into semver
-            tuplify = lambda x: tuple(int(y) for y in x.split('.'))
+            tuplify = lambda x: tuple(int(y) for y in x.split('.'))  # noqa: E731,E501
 
             version = tuplify(version)
             if min_version:
@@ -302,7 +308,7 @@ def _known_microarchitectures():
     """Returns a dictionary of the known micro-architectures. If the
     current host platform is unknown adds it too as a generic target.
     """
-
+    # pylint: disable=fixme
     # TODO: Simplify this logic using object_pairs_hook to OrderedDict
     # TODO: when we stop supporting python2.6
 
@@ -324,12 +330,12 @@ def _known_microarchitectures():
             parent_names = [parent_names]
         if parent_names is None:
             parent_names = []
-        for p in parent_names:
+        for parent in parent_names:
             # Recursively fill parents so they exist before we add them
-            if p in targets:
+            if parent in targets:
                 continue
-            fill_target_from_dict(p, data, targets)
-        parents = [targets.get(p) for p in parent_names]
+            fill_target_from_dict(parent, data, targets)
+        parents = [targets.get(parent) for parent in parent_names]
 
         vendor = values['vendor']
         features = set(values['features'])
@@ -340,23 +346,25 @@ def _known_microarchitectures():
             name, parents, vendor, features, compilers, generation
         )
 
-    targets = {}
-    data = archspec.cpu.schema.targets_json['microarchitectures']
+    known_targets = {}
+    data = archspec.cpu.schema.TARGETS_JSON['microarchitectures']
     for name in data:
-        if name in targets:
+        if name in known_targets:
             # name was already brought in as ancestor to a target
             continue
-        fill_target_from_dict(name, data, targets)
+        fill_target_from_dict(name, data, known_targets)
 
     # Add the host platform if not present
     host_platform = platform.machine()
-    targets.setdefault(host_platform, generic_microarchitecture(host_platform))
+    known_targets.setdefault(
+        host_platform, generic_microarchitecture(host_platform)
+    )
 
-    return targets
+    return known_targets
 
 
 #: Dictionary of known micro-architectures
-targets = LazyDictionary(_known_microarchitectures)
+TARGETS = LazyDictionary(_known_microarchitectures)
 
 
 class UnsupportedMicroarchitecture(ValueError):

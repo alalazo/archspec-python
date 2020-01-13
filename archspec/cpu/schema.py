@@ -2,6 +2,7 @@
 # Spack Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
+"""Schema for the JSON file containing static data."""
 import json
 import os.path
 
@@ -10,7 +11,7 @@ try:
 except ImportError:
     from collections import MutableMapping
 
-compilers_schema = {
+COMPILERS_SCHEMA = {
     'type': 'object',
     'properties': {
         'versions': {'type': 'string'},
@@ -20,7 +21,7 @@ compilers_schema = {
     'required': ['versions', 'flags']
 }
 
-properties = {
+PROPERTIES = {
     'microarchitectures': {
         'type': 'object',
         'patternProperties': {
@@ -49,10 +50,10 @@ properties = {
                         'patternProperties': {
                             r'([\w]*)': {
                                 'anyOf': [
-                                    compilers_schema,
+                                    COMPILERS_SCHEMA,
                                     {
                                         'type': 'array',
-                                        'items': compilers_schema
+                                        'items': COMPILERS_SCHEMA
                                     }
                                 ]
                             }
@@ -90,12 +91,12 @@ properties = {
     }
 }
 
-schema = {
+SCHEMA = {
     '$schema': 'http://json-schema.org/draft-07/schema#',
     'title': 'Schema for microarchitecture definitions and feature aliases',
     'type': 'object',
     'additionalProperties': False,
-    'properties': properties,
+    'properties': PROPERTIES,
 }
 
 
@@ -114,6 +115,7 @@ class LazyDictionary(MutableMapping):
 
     @property
     def data(self):
+        """Returns the lazily constructed dictionary"""
         if self._data is None:
             self._data = self.factory(*self.args, **self.kwargs)
         return self._data
@@ -139,10 +141,10 @@ def _load_targets_json():
     json_dir = os.path.join(os.path.dirname(__file__), '..', 'json', 'cpu')
     json_dir = os.path.abspath(json_dir)
     filename = os.path.join(json_dir, 'microarchitectures.json')
-    with open(filename, 'r') as f:
-        return json.load(f)
+    with open(filename, 'r') as file:
+        return json.load(file)
 
 
 #: In memory representation of the data in microarchitectures.json,
 #: loaded on first access
-targets_json = LazyDictionary(_load_targets_json)
+TARGETS_JSON = LazyDictionary(_load_targets_json)

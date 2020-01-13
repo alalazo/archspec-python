@@ -41,7 +41,7 @@ def expected_target(request, monkeypatch):
     cpu = archspec.cpu
     platform, operating_system, target = request.param.split('-')
 
-    architecture_family = archspec.cpu.targets[target].family
+    architecture_family = archspec.cpu.TARGETS[target].family
     monkeypatch.setattr(
         cpu.detect.platform, 'machine', lambda: str(architecture_family)
     )
@@ -77,12 +77,12 @@ def expected_target(request, monkeypatch):
             current_key = args[-1]
             return info[current_key]
 
-        monkeypatch.setattr(cpu.detect, 'check_output', _check_output)
+        monkeypatch.setattr(cpu.detect, '_check_output', _check_output)
 
-    return archspec.cpu.targets[target]
+    return archspec.cpu.TARGETS[target]
 
 
-@pytest.fixture(params=[x for x in archspec.cpu.targets])
+@pytest.fixture(params=[x for x in archspec.cpu.TARGETS])
 def supported_target(request):
     return request.param
 
@@ -97,18 +97,18 @@ def test_no_dashes_in_target_names(supported_target):
 
 
 def test_str_conversion(supported_target):
-    assert supported_target == str(archspec.cpu.targets[supported_target])
+    assert supported_target == str(archspec.cpu.TARGETS[supported_target])
 
 
 def test_repr_conversion(supported_target):
-    target = archspec.cpu.targets[supported_target]
+    target = archspec.cpu.TARGETS[supported_target]
     assert eval(repr(target)) == target
 
 
 def test_equality(supported_target):
-    target = archspec.cpu.targets[supported_target]
+    target = archspec.cpu.TARGETS[supported_target]
 
-    for name, other_target in archspec.cpu.targets.items():
+    for name, other_target in archspec.cpu.TARGETS.items():
         if name == supported_target:
             assert other_target == target
         else:
@@ -140,8 +140,8 @@ def test_equality(supported_target):
 ])
 def test_partial_ordering(operation, expected_result):
     target, operator, other_target = operation.split()
-    target = archspec.cpu.targets[target]
-    other_target = archspec.cpu.targets[other_target]
+    target = archspec.cpu.TARGETS[target]
+    other_target = archspec.cpu.TARGETS[other_target]
     code = 'target ' + operator + 'other_target'
     assert eval(code) is expected_result
 
@@ -152,7 +152,7 @@ def test_partial_ordering(operation, expected_result):
     ('pentium2', 'x86'),
 ])
 def test_architecture_family(target_name, expected_family):
-    target = archspec.cpu.targets[target_name]
+    target = archspec.cpu.TARGETS[target_name]
     assert str(target.family) == expected_family
 
 
@@ -168,16 +168,16 @@ def test_architecture_family(target_name, expected_family):
     ('aarch64', 'neon')
 ])
 def test_features_query(target_name, feature):
-    target = archspec.cpu.targets[target_name]
+    target = archspec.cpu.TARGETS[target_name]
     assert feature in target
 
 
 @pytest.mark.parametrize('target_name,wrong_feature', [
     ('skylake', 1),
-    ('bulldozer', archspec.cpu.targets['x86_64'])
+    ('bulldozer', archspec.cpu.TARGETS['x86_64'])
 ])
 def test_wrong_types_for_features_query(target_name, wrong_feature):
-    target = archspec.cpu.targets[target_name]
+    target = archspec.cpu.TARGETS[target_name]
     with pytest.raises(TypeError, match='only objects of string types'):
         assert wrong_feature in target
 
@@ -195,8 +195,8 @@ def test_target_json_schema():
     # The file microarchitectures.json contains static data i.e. data that is
     # not meant to be modified by users directly. It is thus sufficient to
     # validate it only once during unit tests.
-    json_data = archspec.cpu.schema.targets_json.data
-    jsonschema.validate(json_data, archspec.cpu.schema.schema)
+    json_data = archspec.cpu.schema.TARGETS_JSON.data
+    jsonschema.validate(json_data, archspec.cpu.schema.SCHEMA)
 
 
 @pytest.mark.parametrize('target_name,compiler,version,expected_flags', [
@@ -231,7 +231,7 @@ def test_target_json_schema():
     ('sandybridge', 'unknown', '4.8.5', ''),
 ])
 def test_optimization_flags(target_name, compiler, version, expected_flags):
-    target = archspec.cpu.targets[target_name]
+    target = archspec.cpu.TARGETS[target_name]
     flags = target.optimization_flags(compiler, version)
     assert flags == expected_flags
 
@@ -240,7 +240,7 @@ def test_optimization_flags(target_name, compiler, version, expected_flags):
     ('excavator', 'gcc', '4.8.5')
 ])
 def test_unsupported_optimization_flags(target_name, compiler, version):
-    target = archspec.cpu.targets[target_name]
+    target = archspec.cpu.TARGETS[target_name]
     with pytest.raises(
             archspec.cpu.UnsupportedMicroarchitecture,
             match='cannot produce optimized binary'
@@ -261,7 +261,7 @@ def test_unsupported_optimization_flags(target_name, compiler, version):
 ])
 def test_automatic_conversion_on_comparisons(operation, expected_result):
     target, operator, other_target = operation.split()
-    target = archspec.cpu.targets[target]
+    target = archspec.cpu.TARGETS[target]
     code = 'target ' + operator + 'other_target'
     assert eval(code) is expected_result
 
