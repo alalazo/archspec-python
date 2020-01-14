@@ -30,6 +30,7 @@ def coerce_target_names(func):
     """Decorator that automatically converts a known target name to a proper
     Microarchitecture object.
     """
+
     @functools.wraps(func)
     def _impl(self, other):
         if isinstance(other, six.string_types):
@@ -39,6 +40,7 @@ def coerce_target_names(func):
             other = TARGETS[other]
 
         return func(self, other)
+
     return _impl
 
 
@@ -47,9 +49,7 @@ class Microarchitecture(object):
     #: Aliases for micro-architecture's features
     feature_aliases = FEATURE_ALIASES
 
-    def __init__(
-            self, name, parents, vendor, features, compilers, generation=0
-    ):
+    def __init__(self, name, parents, vendor, features, compilers, generation=0):
         """Represents a specific CPU micro-architecture.
 
         Args:
@@ -107,12 +107,14 @@ class Microarchitecture(object):
         if not isinstance(other, Microarchitecture):
             return NotImplemented
 
-        return (self.name == other.name and
-                self.vendor == other.vendor and
-                self.features == other.features and
-                self.ancestors == other.ancestors and
-                self.compilers == other.compilers and
-                self.generation == other.generation)
+        return (
+            self.name == other.name
+            and self.vendor == other.vendor
+            and self.features == other.features
+            and self.ancestors == other.ancestors
+            and self.compilers == other.compilers
+            and self.generation == other.generation
+        )
 
     @coerce_target_names
     def __ne__(self, other):
@@ -142,8 +144,10 @@ class Microarchitecture(object):
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        fmt = cls_name + '({0.name!r}, {0.parents!r}, {0.vendor!r}, ' \
-                         '{0.features!r}, {0.compilers!r}, {0.generation!r})'
+        fmt = (
+            cls_name + "({0.name!r}, {0.parents!r}, {0.vendor!r}, "
+            "{0.features!r}, {0.compilers!r}, {0.generation!r})"
+        )
         return fmt.format(self)
 
     def __str__(self):
@@ -152,7 +156,7 @@ class Microarchitecture(object):
     def __contains__(self, feature):
         # Feature must be of a string type, so be defensive about that
         if not isinstance(feature, six.string_types):
-            msg = 'only objects of string types are accepted [got {0}]'
+            msg = "only objects of string types are accepted [got {0}]"
             raise TypeError(msg.format(str(type(feature))))
 
         # Here we look first in the raw features, and fall-back to
@@ -161,9 +165,7 @@ class Microarchitecture(object):
             return True
 
         # Check if the alias is defined, if not it will return False
-        match_alias = Microarchitecture.feature_aliases.get(
-            feature, lambda x: False
-        )
+        match_alias = Microarchitecture.feature_aliases.get(feature, lambda x: False)
         return match_alias(self)
 
     @property
@@ -171,7 +173,7 @@ class Microarchitecture(object):
         """Returns the architecture family a given target belongs to"""
         roots = [x for x in [self] + self.ancestors if not x.ancestors]
         msg = "a target is expected to belong to just one architecture family"
-        msg += "[found {0}]".format(', '.join(str(x) for x in roots))
+        msg += "[found {0}]".format(", ".join(str(x) for x in roots))
         assert len(roots) == 1, msg
 
         return roots.pop()
@@ -184,13 +186,11 @@ class Microarchitecture(object):
                 items instead of the dictionary
         """
         list_of_items = [
-            ('name', str(self.name)),
-            ('vendor', str(self.vendor)),
-            ('features', sorted(
-                str(x) for x in self.features
-            )),
-            ('generation', self.generation),
-            ('parents', [str(x) for x in self.parents])
+            ("name", str(self.name)),
+            ("vendor", str(self.vendor)),
+            ("features", sorted(str(x) for x in self.features)),
+            ("generation", self.generation),
+            ("parents", [str(x) for x in self.parents]),
         ]
         if return_list_of_items:
             return list_of_items
@@ -212,7 +212,7 @@ class Microarchitecture(object):
         """
         # If we don't have information on compiler return an empty string
         if compiler not in self.compilers:
-            return ''
+            return ""
 
         # If we have information on this compiler we need to check the
         # version being used
@@ -223,7 +223,7 @@ class Microarchitecture(object):
             compiler_info = [compiler_info]
 
         def satisfies_constraint(entry, version):
-            min_version, max_version = entry['versions'].split(':')
+            min_version, max_version = entry["versions"].split(":")
 
             # Check version suffixes
             min_version, min_suffix = version_components(min_version)
@@ -231,12 +231,13 @@ class Microarchitecture(object):
             version, suffix = version_components(version)
 
             # If the suffixes are not all equal there's no match
-            if ((suffix != min_suffix and min_version) or
-                    (suffix != max_suffix and max_version)):
+            if (suffix != min_suffix and min_version) or (
+                suffix != max_suffix and max_version  # pylint: disable=bad-continuation
+            ):
                 return False
 
             # Assume compiler versions fit into semver
-            tuplify = lambda x: tuple(int(y) for y in x.split('.'))  # noqa: E731,E501
+            tuplify = lambda x: tuple(int(y) for y in x.split("."))  # noqa: E731,E501
 
             version = tuplify(version)
             if min_version:
@@ -253,23 +254,29 @@ class Microarchitecture(object):
 
         for compiler_entry in compiler_info:
             if satisfies_constraint(compiler_entry, version):
-                flags_fmt = compiler_entry['flags']
+                flags_fmt = compiler_entry["flags"]
                 # If there's no field name, use the name of the
                 # micro-architecture
-                compiler_entry.setdefault('name', self.name)
+                compiler_entry.setdefault("name", self.name)
 
                 # Check if we need to emit a warning
-                warning_message = compiler_entry.get('warnings', None)
+                warning_message = compiler_entry.get("warnings", None)
                 if warning_message:
                     warnings.warn(warning_message)
 
                 flags = flags_fmt.format(**compiler_entry)
                 return flags
 
-        msg = ("cannot produce optimized binary for micro-architecture '{0}'"
-               " with {1}@{2} [supported compiler versions are {3}]")
-        msg = msg.format(self.name, compiler, version,
-                         ', '.join([x['versions'] for x in compiler_info]))
+        msg = (
+            "cannot produce optimized binary for micro-architecture '{0}'"
+            " with {1}@{2} [supported compiler versions are {3}]"
+        )
+        msg = msg.format(
+            self.name,
+            compiler,
+            version,
+            ", ".join([x["versions"] for x in compiler_info]),
+        )
         raise UnsupportedMicroarchitecture(msg)
 
 
@@ -280,7 +287,7 @@ def generic_microarchitecture(name):
         name (str): name of the micro-architecture
     """
     return Microarchitecture(
-        name, parents=[], vendor='generic', features=[], compilers={}
+        name, parents=[], vendor="generic", features=[], compilers={}
     )
 
 
@@ -294,9 +301,9 @@ def version_components(version):
     Args:
         version (str): version to be decomposed into its components
     """
-    match = re.match(r'([\d.]*)(-?)(.*)', str(version))
+    match = re.match(r"([\d.]*)(-?)(.*)", str(version))
     if not match:
-        return '', ''
+        return "", ""
 
     version_number = match.group(1)
     suffix = match.group(3)
@@ -325,7 +332,7 @@ def _known_microarchitectures():
         values = data[name]
 
         # Get direct parents of target
-        parent_names = values['from']
+        parent_names = values["from"]
         if isinstance(parent_names, six.string_types):
             parent_names = [parent_names]
         if parent_names is None:
@@ -337,17 +344,17 @@ def _known_microarchitectures():
             fill_target_from_dict(parent, data, targets)
         parents = [targets.get(parent) for parent in parent_names]
 
-        vendor = values['vendor']
-        features = set(values['features'])
-        compilers = values.get('compilers', {})
-        generation = values.get('generation', 0)
+        vendor = values["vendor"]
+        features = set(values["features"])
+        compilers = values.get("compilers", {})
+        generation = values.get("generation", 0)
 
         targets[name] = Microarchitecture(
             name, parents, vendor, features, compilers, generation
         )
 
     known_targets = {}
-    data = archspec.cpu.schema.TARGETS_JSON['microarchitectures']
+    data = archspec.cpu.schema.TARGETS_JSON["microarchitectures"]
     for name in data:
         if name in known_targets:
             # name was already brought in as ancestor to a target
@@ -356,9 +363,7 @@ def _known_microarchitectures():
 
     # Add the host platform if not present
     host_platform = platform.machine()
-    known_targets.setdefault(
-        host_platform, generic_microarchitecture(host_platform)
-    )
+    known_targets.setdefault(host_platform, generic_microarchitecture(host_platform))
 
     return known_targets
 

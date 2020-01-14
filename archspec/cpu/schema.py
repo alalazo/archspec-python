@@ -12,91 +12,77 @@ except ImportError:
     from collections import MutableMapping
 
 COMPILERS_SCHEMA = {
-    'type': 'object',
-    'properties': {
-        'versions': {'type': 'string'},
-        'name': {'type': 'string'},
-        'flags': {'type': 'string'}
+    "type": "object",
+    "properties": {
+        "versions": {"type": "string"},
+        "name": {"type": "string"},
+        "flags": {"type": "string"},
     },
-    'required': ['versions', 'flags']
+    "required": ["versions", "flags"],
 }
 
 PROPERTIES = {
-    'microarchitectures': {
-        'type': 'object',
-        'patternProperties': {
-            r'([\w]*)': {
-                'type': 'object',
-                'properties': {
-                    'from': {
-                        'anyOf': [
+    "microarchitectures": {
+        "type": "object",
+        "patternProperties": {
+            r"([\w]*)": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "anyOf": [
                             # More than one parent
-                            {'type': 'array', 'items': {'type': 'string'}},
+                            {"type": "array", "items": {"type": "string"}},
                             # Exactly one parent
-                            {'type': 'string'},
+                            {"type": "string"},
                             # No parent
-                            {'type': 'null'}
+                            {"type": "null"},
                         ]
                     },
-                    'vendor': {
-                        'type': 'string'
-                    },
-                    'features': {
-                        'type': 'array',
-                        'items': {'type': 'string'}
-                    },
-                    'compilers': {
-                        'type': 'object',
-                        'patternProperties': {
-                            r'([\w]*)': {
-                                'anyOf': [
+                    "vendor": {"type": "string"},
+                    "features": {"type": "array", "items": {"type": "string"}},
+                    "compilers": {
+                        "type": "object",
+                        "patternProperties": {
+                            r"([\w]*)": {
+                                "anyOf": [
                                     COMPILERS_SCHEMA,
-                                    {
-                                        'type': 'array',
-                                        'items': COMPILERS_SCHEMA
-                                    }
+                                    {"type": "array", "items": COMPILERS_SCHEMA},
                                 ]
                             }
-                        }
-                    }
+                        },
+                    },
                 },
-                'required': ['from', 'vendor', 'features']
-            }
-        }
-    },
-    'feature_aliases': {
-        'type': 'object',
-        'patternProperties': {
-            r'([\w]*)': {
-                'type': 'object',
-                'properties': {},
-                'additionalProperties': False
+                "required": ["from", "vendor", "features"],
             }
         },
     },
-    'conversions': {
-        'type': 'object',
-        'properties': {
-            'description': {
-                'type': 'string'
-            },
-            'arm_vendors': {
-                'type': 'object',
-            },
-            'darwin_flags': {
-                'type': 'object'
+    "feature_aliases": {
+        "type": "object",
+        "patternProperties": {
+            r"([\w]*)": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": False,
             }
         },
-        'additionalProperties': False
-    }
+    },
+    "conversions": {
+        "type": "object",
+        "properties": {
+            "description": {"type": "string"},
+            "arm_vendors": {"type": "object"},
+            "darwin_flags": {"type": "object"},
+        },
+        "additionalProperties": False,
+    },
 }
 
 SCHEMA = {
-    '$schema': 'http://json-schema.org/draft-07/schema#',
-    'title': 'Schema for microarchitecture definitions and feature aliases',
-    'type': 'object',
-    'additionalProperties': False,
-    'properties': PROPERTIES,
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Schema for microarchitecture definitions and feature aliases",
+    "type": "object",
+    "additionalProperties": False,
+    "properties": PROPERTIES,
 }
 
 
@@ -138,10 +124,10 @@ class LazyDictionary(MutableMapping):
 
 def _load_targets_json():
     """Loads ``microarchitectures.json`` in memory."""
-    json_dir = os.path.join(os.path.dirname(__file__), '..', 'json', 'cpu')
+    json_dir = os.path.join(os.path.dirname(__file__), "..", "json", "cpu")
     json_dir = os.path.abspath(json_dir)
-    filename = os.path.join(json_dir, 'microarchitectures.json')
-    with open(filename, 'r') as file:
+    filename = os.path.join(json_dir, "microarchitectures.json")
+    with open(filename, "r") as file:
         return json.load(file)
 
 

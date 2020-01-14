@@ -11,10 +11,10 @@ from .microarchitecture import version_components
 from .detect import host
 
 __all__ = [
-    'Microarchitecture',
-    'UnsupportedMicroarchitecture',
-    'TARGETS',
-    'generic_microarchitecture',
-    'host',
-    'version_components'
+    "Microarchitecture",
+    "UnsupportedMicroarchitecture",
+    "TARGETS",
+    "generic_microarchitecture",
+    "host",
+    "version_components",
 ]

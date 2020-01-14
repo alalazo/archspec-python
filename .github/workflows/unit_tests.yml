@@ -20,7 +20,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.5, 3.6, 3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v1
@@ -33,6 +33,10 @@ jobs:
     - name: Install dependencies
       run: |
         pip install poetry tox-gh-actions coverage
+        if [[ $(python -c "import sys; print(sys.version_info[:2] == (3, 7))") == "True" ]]
+        then
+           pip install black pylint flake8
+        fi
     - name: Run tests with tox
       run: |
         tox
