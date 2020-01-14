@@ -1,65 +1,48 @@
-# archspec-python
+[![](https://github.com/alalazo/archspec-python/workflows/Unit%20tests/badge.svg)](https://github.com/alalazo/archspec-python/actions)
+[![codecov](https://codecov.io/gh/alalazo/archspec-python/branch/master/graph/badge.svg)](https://codecov.io/gh/alalazo/archspec-python)
 
-Test repository to try a layout based on git submodules. To check out the current repository and try it:
+# Archspec (Python bindings)
+
+Archspec aims at providing a standard set of human-understandable labels for
+various aspects of a system architecture  like CPU, network fabrics, etc. and
+APIs to detect, query and compare them. 
+
+This project grew out of [Spack](https://spack.io/) and is currently under 
+active development. At present it supports APIs to detect and model 
+compatibility relationships among different CPU microarchitectures.
+
+## Getting started with development
+
+The `archspec` Python package needs [poetry](https://python-poetry.org/) to
+be installed from VCS sources. The preferred method to install it is via 
+its custom installer outside of any virtual environment:
+```console
+$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+``` 
+You can refer to [Poetry's documentation](https://python-poetry.org/docs/#installation)
+for further details or for other methods to install this tool. You'll also need `tox`
+to run unit test:
+```console
+$ pip install --user tox
+```
+Finally you'll need to clone the repository: 
 ```console
 $ git clone --recursive https://github.com/alalazo/archspec-python.git
-Cloning into 'archspec-python'...
-remote: Enumerating objects: 36, done.
-remote: Counting objects: 100% (36/36), done.
-remote: Compressing objects: 100% (23/23), done.
-remote: Total 36 (delta 10), reused 36 (delta 10), pack-reused 0
-Unpacking objects: 100% (36/36), done.
-Submodule 'archspec/json' (https://github.com/alalazo/archspec-json.git) registered for path 'archspec/json'
-Cloning into '/home/culpo/tmp/archspec/archspec-python/archspec/json'...
-remote: Enumerating objects: 4, done.        
-remote: Counting objects: 100% (4/4), done.        
-remote: Compressing objects: 100% (3/3), done.        
-remote: Total 4 (delta 0), reused 4 (delta 0), pack-reused 0        
-Submodule path 'archspec/json': checked out '9b582109567e1612b8f9f0494ac720e90c65d269'
 ```
-Once the checkout is done you can install the package using a virtual environment based on Python 3.7:
+
+### Running unit tests
+Once you have your environment ready you can run `archspec` unit tests 
+using ``tox`` from the root of the repository:
 ```console
-(py37) $ pip install poetry
-[ ... ]
-
-(py37) $ poetry check
-All set!
-
-(py37) $ poetry install
-Updating dependencies
-Resolving dependencies... (6.7s)
-
-Writing lock file
-
-
-Package operations: 5 installs, 2 updates, 0 removals
-
-  - Updating importlib-metadata (1.1.3 -> 1.4.0)
-  - Installing packaging (20.0)
-  - Installing pluggy (0.13.1)
-  - Installing py (1.8.1)
-  - Updating pyrsistent (0.14.11 -> 0.15.7)
-  - Installing wcwidth (0.1.8)
-  - Installing pytest (5.3.2)
-  - Installing archspec (0.1.0)
-
-(py37) $ pytest
-============================================================== test session starts ===============================================================
-platform linux -- Python 3.7.6, pytest-5.3.2, py-1.8.1, pluggy-0.13.1
-rootdir: /home/culpo/tmp/archspec/archspec-python
-collected 254 items                                                                                                                              
-
-tests/test_archspec.py .                                                                                                                   [  0%]
-tests/test_cpu.py ........................................................................................................................ [ 47%]
-.....................................................................................................................................      [100%]
-
-============================================================== 254 passed in 0.69s ===============================================================
-
-(py37) $ poetry build
-Building archspec (0.1.0)
- - Building sdist
- - Built archspec-0.1.0.tar.gz
-
- - Building wheel
- - Built archspec-0.1.0-py3-none-any.whl
-```
+$ tox
+  [ ... ]
+  py27: commands succeeded
+  py35: commands succeeded
+  py36: commands succeeded
+  py37: commands succeeded
+  py38: commands succeeded
+  pylint: commands succeeded
+  flake8: commands succeeded
+  black: commands succeeded
+  congratulations :)
+``` 

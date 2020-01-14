@@ -33,10 +33,6 @@ jobs:
     - name: Install dependencies (Common)
       run: |
         pip install poetry tox-gh-actions coverage
-    - name: Install dependencies (Py37 extra deps)
-      if: matrix.python-version == '3.7'
-      run: |
-        pip install black pylint flake8
     - name: Run tests with tox
       run: |
         tox
