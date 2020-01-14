@@ -30,13 +30,13 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
+    - name: Install dependencies (Common)
       run: |
         pip install poetry tox-gh-actions coverage
-        if [[ $(python -c "import sys; print(sys.version_info[:2] == (3, 7))") == "True" ]]
-        then
-           pip install black pylint flake8
-        fi
+    - name: Install dependencies (Py37 extra deps)
+      if: matrix.python-version == '3.7'
+      run: |
+        pip install black pylint flake8
     - name: Run tests with tox
       run: |
         tox
