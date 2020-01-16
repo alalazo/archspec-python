@@ -32,7 +32,13 @@ flake8 = [
   {version = "^3.7.9", python = "^3.5"}
 ]
 black = [
-  {version = "19.10b0", python = "^3.6"}
+  {version = "^19.10b0", python = "^3.6"}
+]
+sphinx = [
+  {version = "^2.3.1", python = "^3.5"}
+]
+sphinx_rtd_theme = [
+  {version = "^0.4.3", python = "^3.5"}
 ]
 jsonschema = "^3.2.0"
 
