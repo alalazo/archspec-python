@@ -11,7 +11,9 @@ import os.path
 import jsonschema
 
 import archspec.cpu
+import archspec.cpu.alias
 import archspec.cpu.detect
+import archspec.cpu.schema
 
 # This is needed to check that with repr we could create equivalent objects
 from archspec.cpu import Microarchitecture
@@ -150,7 +152,7 @@ def test_partial_ordering(operation, expected_result):
 
 @pytest.mark.parametrize(
     "target_name,expected_family",
-    [("skylake", "x86_64"), ("zen", "x86_64"), ("pentium2", "x86"),],
+    [("skylake", "x86_64"), ("zen", "x86_64"), ("pentium2", "x86")],
 )
 def test_architecture_family(target_name, expected_family):
     target = archspec.cpu.TARGETS[target_name]
@@ -200,7 +202,8 @@ def test_target_json_schema():
     # not meant to be modified by users directly. It is thus sufficient to
     # validate it only once during unit tests.
     json_data = archspec.cpu.schema.TARGETS_JSON.data
-    jsonschema.validate(json_data, archspec.cpu.schema.SCHEMA)
+    schema = archspec.cpu.schema.SCHEMA.data
+    jsonschema.validate(json_data, schema)
 
 
 @pytest.mark.parametrize(
@@ -297,3 +300,11 @@ def test_version_components(version, expected_number, expected_suffix):
     number, suffix = archspec.cpu.version_components(version)
     assert number == expected_number
     assert suffix == expected_suffix
+
+
+def test_all_alias_predicates_are_implemented():
+    schema = archspec.cpu.schema.SCHEMA
+    fa_schema = schema["properties"]["feature_aliases"]
+    aliases_in_schema = set(fa_schema["patternProperties"]["([\\w]*)"]["properties"])
+    aliases_implemented = set(archspec.cpu.alias._FEATURE_ALIAS_PREDICATE)
+    assert aliases_implemented == aliases_in_schema

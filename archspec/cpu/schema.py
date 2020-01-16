@@ -2,7 +2,9 @@
 # Spack Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
-"""Schema for the JSON file containing static data."""
+"""Global objects with the content of the microarchitecture
+JSON file and its schema
+"""
 import json
 import os.path
 
@@ -10,80 +12,6 @@ try:
     from collections.abc import MutableMapping  # novm
 except ImportError:
     from collections import MutableMapping
-
-COMPILERS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "versions": {"type": "string"},
-        "name": {"type": "string"},
-        "flags": {"type": "string"},
-    },
-    "required": ["versions", "flags"],
-}
-
-PROPERTIES = {
-    "microarchitectures": {
-        "type": "object",
-        "patternProperties": {
-            r"([\w]*)": {
-                "type": "object",
-                "properties": {
-                    "from": {
-                        "anyOf": [
-                            # More than one parent
-                            {"type": "array", "items": {"type": "string"}},
-                            # Exactly one parent
-                            {"type": "string"},
-                            # No parent
-                            {"type": "null"},
-                        ]
-                    },
-                    "vendor": {"type": "string"},
-                    "features": {"type": "array", "items": {"type": "string"}},
-                    "compilers": {
-                        "type": "object",
-                        "patternProperties": {
-                            r"([\w]*)": {
-                                "anyOf": [
-                                    COMPILERS_SCHEMA,
-                                    {"type": "array", "items": COMPILERS_SCHEMA},
-                                ]
-                            }
-                        },
-                    },
-                },
-                "required": ["from", "vendor", "features"],
-            }
-        },
-    },
-    "feature_aliases": {
-        "type": "object",
-        "patternProperties": {
-            r"([\w]*)": {
-                "type": "object",
-                "properties": {},
-                "additionalProperties": False,
-            }
-        },
-    },
-    "conversions": {
-        "type": "object",
-        "properties": {
-            "description": {"type": "string"},
-            "arm_vendors": {"type": "object"},
-            "darwin_flags": {"type": "object"},
-        },
-        "additionalProperties": False,
-    },
-}
-
-SCHEMA = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Schema for microarchitecture definitions and feature aliases",
-    "type": "object",
-    "additionalProperties": False,
-    "properties": PROPERTIES,
-}
 
 
 class LazyDictionary(MutableMapping):
@@ -122,15 +50,21 @@ class LazyDictionary(MutableMapping):
         return len(self.data)
 
 
-def _load_targets_json():
-    """Loads ``microarchitectures.json`` in memory."""
+def _load_json_file(json_file):
     json_dir = os.path.join(os.path.dirname(__file__), "..", "json", "cpu")
     json_dir = os.path.abspath(json_dir)
-    filename = os.path.join(json_dir, "microarchitectures.json")
-    with open(filename, "r") as file:
-        return json.load(file)
+
+    def _factory():
+        filename = os.path.join(json_dir, json_file)
+        with open(filename, "r") as file:
+            return json.load(file)
+
+    return _factory
 
 
 #: In memory representation of the data in microarchitectures.json,
 #: loaded on first access
-TARGETS_JSON = LazyDictionary(_load_targets_json)
+TARGETS_JSON = LazyDictionary(_load_json_file("microarchitectures.json"))
+
+#: JSON schema for microarchitectures.json, loaded on first access
+SCHEMA = LazyDictionary(_load_json_file("microarchitectures_schema.json"))

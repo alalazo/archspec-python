@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 """Aliases for microarchitecture features."""
 # pylint: disable=useless-object-inheritance
-from .schema import TARGETS_JSON, LazyDictionary, PROPERTIES
+from .schema import TARGETS_JSON, LazyDictionary
 
 _FEATURE_ALIAS_PREDICATE = {}
 
@@ -40,35 +40,23 @@ def _feature_aliases():
 FEATURE_ALIASES = LazyDictionary(_feature_aliases)
 
 
-def alias_predicate(predicate_schema):
-    """Decorator to register a predicate that can be used to define
+def alias_predicate(func):
+    """Decorator to register a predicate that can be used to evaluate
     feature aliases.
-
-    Args:
-        predicate_schema (dict): schema to be enforced in
-            microarchitectures.json for the predicate
     """
+    name = func.__name__
 
-    def decorator(func):
-        name = func.__name__
+    # Check we didn't register anything else with the same name
+    if name in _FEATURE_ALIAS_PREDICATE:
+        msg = 'the alias predicate "{0}" already exists'.format(name)
+        raise KeyError(msg)
 
-        # Check we didn't register anything else with the same name
-        if name in _FEATURE_ALIAS_PREDICATE:
-            msg = 'the alias predicate "{0}" already exists'.format(name)
-            raise KeyError(msg)
+    _FEATURE_ALIAS_PREDICATE[name] = func
 
-        # Update the overall schema
-        alias_schema = PROPERTIES["feature_aliases"]["patternProperties"]
-        alias_schema[r"([\w]*)"]["properties"].update({name: predicate_schema})
-        # Register the predicate
-        _FEATURE_ALIAS_PREDICATE[name] = func
-
-        return func
-
-    return decorator
+    return func
 
 
-@alias_predicate(predicate_schema={"type": "string"})
+@alias_predicate
 def reason(_):
     """This predicate returns always True and it's there to allow writing
     a documentation string in the JSON file to explain why an alias is needed.
@@ -76,7 +64,7 @@ def reason(_):
     return lambda x: True
 
 
-@alias_predicate(predicate_schema={"type": "array", "items": {"type": "string"}})
+@alias_predicate
 def any_of(list_of_features):
     """Returns a predicate that is True if any of the feature in the
     list is in the microarchitecture being tested, False otherwise.
@@ -88,7 +76,7 @@ def any_of(list_of_features):
     return _impl
 
 
-@alias_predicate(predicate_schema={"type": "array", "items": {"type": "string"}})
+@alias_predicate
 def families(list_of_families):
     """Returns a predicate that is True if the architecture family of
     the microarchitecture being tested is in the list, False otherwise.
